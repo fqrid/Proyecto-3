@@ -8,35 +8,29 @@ import { initSocket } from "./src/modules/sessions/session.socket.js";
 import juegoRoutes from "./routes/juegoRoutes.js";
 import categoriaRoutes from "./routes/categoriaRoutes.js";
 import usuarioRoutes from "./routes/usuarioRoutes.js";
-import productoRoutes from "./routes/productoRoutes.js"; // 🔥 NUEVO
+import productoRoutes from "./routes/productoRoutes.js";
 
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
-// =======================
 // RUTAS
-// =======================
 app.use("/api/juegos", juegoRoutes);
 app.use("/api/categorias", categoriaRoutes);
 app.use("/api/usuarios", usuarioRoutes);
-app.use("/api/productos", productoRoutes); // 🔥 NUEVO
+app.use("/api/productos", productoRoutes);
 
 app.get("/", (req, res) => {
   res.send("API funcionando correctamente 🚀");
 });
 
-// =======================
 // MANEJO DE ERRORES
-// =======================
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Error del servidor" });
 });
 
-// =======================
 // SERVIDOR HTTP + SOCKET
-// =======================
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
@@ -49,9 +43,7 @@ const io = new Server(httpServer, {
 // Inicializar eventos de Socket.io
 initSocket(io);
 
-// =======================
 // CONEXIÓN A DB Y ARRANQUE
-// =======================
 connectDB().then(() => {
   httpServer.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
