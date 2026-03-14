@@ -6,15 +6,17 @@ import Result from "./result.model.js";
 const TIEMPO_MAX_MS = 30000; // 30 segundos máximo por pregunta
 
 /**
- * Genera un PIN único de 6 dígitos numéricos (ej: 384920)
+ * Genera un PIN único de 6 caracteres alfanuméricos en mayúsculas
  */
 const generatePin = async () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let pin;
     let exists = true;
 
     while (exists) {
-        // Número entre 100000 y 999999
-        pin = String(Math.floor(100000 + Math.random() * 900000));
+        pin = Array.from({ length: 6 }, () =>
+            chars.charAt(Math.floor(Math.random() * chars.length))
+        ).join("");
         exists = await Session.exists({ pin });
     }
 
@@ -51,18 +53,6 @@ export const createSession = async (juegoId, creadorId) => {
     return session;
 };
 
-// ─── INICIAR PARTIDA (crea partida y devuelve PIN numérico) ───────────────────
-
-/**
- * Crea una nueva partida y genera su PIN numérico de 6 dígitos.
- * Endpoint: POST /sessions/start
- */
-export const iniciarPartida = async (juegoId, creadorId) => {
-    // Reutiliza createSession internamente
-    const session = await createSession(juegoId, creadorId);
-    return session;
-};
-
 // ─── START SESSION ────────────────────────────────────────────────────────────
 
 export const startSession = async (sessionId) => {
@@ -91,20 +81,14 @@ export const startSession = async (sessionId) => {
 
 // ─── JOIN SESSION ─────────────────────────────────────────────────────────────
 
-/**
- * Unirse a una partida con PIN numérico y nickname.
- * usuarioId es opcional: si no se envía, se genera uno automático.
- */
-export const joinSession = async (pin, nickname, usuarioId) => {
-    if (!pin || !nickname) {
-        const err = new Error("pin y nickname son requeridos");
+export const joinSession = async (pin, usuarioId, nombre) => {
+    if (!pin || !usuarioId || !nombre) {
+        const err = new Error("pin, usuarioId y nombre son requeridos");
         err.statusCode = 400;
         throw err;
     }
 
-    // PIN siempre como string (numérico)
-    const pinStr = String(pin).trim();
-    const session = await Session.findOne({ pin: pinStr });
+    const session = await Session.findOne({ pin: pin.toUpperCase() });
 
     if (!session) {
         const err = new Error("PIN de sesión inválido");
@@ -118,15 +102,10 @@ export const joinSession = async (pin, nickname, usuarioId) => {
         throw err;
     }
 
-    // Si no viene usuarioId, lo generamos como anónimo
-    const uid =
-        usuarioId ||
-        `guest_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-
-    // Verificar si el nickname ya existe en la sesión
+    // Verificar si el usuario ya está en la sesión
     const existing = await Participant.findOne({
         sessionId: session._id,
-        nombre: nickname,
+        usuarioId,
     });
 
     if (existing) {
@@ -138,8 +117,8 @@ export const joinSession = async (pin, nickname, usuarioId) => {
 
     const participant = await Participant.create({
         sessionId: session._id,
-        usuarioId: uid,
-        nombre: nickname,
+        usuarioId,
+        nombre,
     });
 
     return { session, participant };
