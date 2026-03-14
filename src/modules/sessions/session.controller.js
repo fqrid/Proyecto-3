@@ -21,7 +21,28 @@ export const createSession = async (req, res, next) => {
     }
 };
 
-// POST /api/sessions/:sessionId/start
+// POST /api/sessions/start – Crear partida y generar PIN numérico (ej: 384920)
+export const iniciarPartida = async (req, res, next) => {
+    try {
+        const { juegoId, creadorId } = req.body;
+        const session = await sessionService.iniciarPartida(juegoId, creadorId);
+        res.status(201).json({
+            success: true,
+            message: "Partida creada. PIN generado.",
+            data: {
+                sessionId: session._id,
+                juegoId: session.juegoId,
+                pin: session.pin,
+                estado: session.estado,
+                createdAt: session.createdAt,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/sessions/:sessionId/start – Activar sesión ya creada
 export const startSession = async (req, res, next) => {
     try {
         const { sessionId } = req.params;
@@ -40,14 +61,14 @@ export const startSession = async (req, res, next) => {
     }
 };
 
-// POST /api/sessions/join
+// POST /api/sessions/join – Unirse con PIN + nickname
 export const joinSession = async (req, res, next) => {
     try {
-        const { pin, usuarioId, nombre } = req.body;
+        const { pin, nickname, usuarioId } = req.body;
         const { session, participant } = await sessionService.joinSession(
             pin,
-            usuarioId,
-            nombre
+            nickname,
+            usuarioId
         );
         res.status(200).json({
             success: true,
@@ -56,8 +77,9 @@ export const joinSession = async (req, res, next) => {
                 sessionId: session._id,
                 juegoId: session.juegoId,
                 estado: session.estado,
+                pin: session.pin,
                 participantId: participant._id,
-                nombre: participant.nombre,
+                nickname: participant.nombre,
                 puntaje: participant.puntaje,
             },
         });
@@ -66,7 +88,7 @@ export const joinSession = async (req, res, next) => {
     }
 };
 
-// POST /api/sessions/:sessionId/answer
+// POST /api/sessions/:sessionId/answer – Registrar respuesta
 export const submitAnswer = async (req, res, next) => {
     try {
         const { sessionId } = req.params;
@@ -97,7 +119,7 @@ export const submitAnswer = async (req, res, next) => {
     }
 };
 
-// GET /api/sessions/:sessionId/ranking
+// GET /api/sessions/:sessionId/ranking – Ranking en vivo
 export const getRanking = async (req, res, next) => {
     try {
         const { sessionId } = req.params;
@@ -111,7 +133,7 @@ export const getRanking = async (req, res, next) => {
     }
 };
 
-// POST /api/sessions/:sessionId/end
+// POST /api/sessions/:sessionId/end – Finalizar partida
 export const endSession = async (req, res, next) => {
     try {
         const { sessionId } = req.params;

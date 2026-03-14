@@ -1,10 +1,12 @@
-import { createServer } from "http";
-import { Server } from "socket.io";
+import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
-import app from "./src/app.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { initSocket } from "./src/modules/sessions/session.socket.js";
 
+import rolRoutes from "./routes/rolRoutes.js";
 import juegoRoutes from "./routes/juegoRoutes.js";
 import categoriaRoutes from "./routes/categoriaRoutes.js";
 import usuarioRoutes from "./routes/usuarioRoutes.js";
@@ -14,7 +16,12 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 // RUTAS
+app.use("/api/roles", rolRoutes);
 app.use("/api/juegos", juegoRoutes);
 app.use("/api/categorias", categoriaRoutes);
 app.use("/api/usuarios", usuarioRoutes);

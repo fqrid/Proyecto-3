@@ -1,33 +1,32 @@
 import mongoose from "mongoose";
 
-// Modelo básico de usuario. Se puede extender más adelante según necesidad.
-const usuarioSchema = new mongoose.Schema(
-  {
-    nombre: {
-      type: String,
-      required: [true, "El nombre es requerido"],
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: [true, "El email es requerido"],
-      trim: true,
-      lowercase: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-    },
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
+const usuarioSchema = new mongoose.Schema({
+  nombre: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  {
-    timestamps: false,
-  }
-);
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  },
+  contraseña: {
+    type: String,
+    required: true,
+    minlength: 6,
+  },
+  rolId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Rol",
+    required: true,
+  },
+  fechaRegistro: {
+    type: Date,
+    default: Date.now,
+  },
+}, { timestamps: true });
 
-const Usuario = mongoose.model("Usuario", usuarioSchema);
-
-export default Usuario;
+export default mongoose.model("Usuario", usuarioSchema);
