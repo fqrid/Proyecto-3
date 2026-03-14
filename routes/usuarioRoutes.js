@@ -1,11 +1,21 @@
 import express from "express";
-import { registrar, login, perfil } from "../controllers/usuarioController.js";
-import { verificarToken } from "../middleware/auth.js";
+import {
+  obtenerUsuarios,
+  obtenerUsuarioPorId,
+  crearUsuario,
+  actualizarUsuario,
+  cambiarContraseña,
+  eliminarUsuario,
+} from "../controllers/usuarioController.js";
 
 const router = express.Router();
 
-router.post("/register", registrar);
-router.post("/login", login);
-router.get("/me", verificarToken, perfil);
+// Rutas para usuarios
+router.get("/", obtenerUsuarios);
+router.get("/:id", obtenerUsuarioPorId);
+router.post("/", crearUsuario);
+router.put("/:id", actualizarUsuario);
+router.patch("/:id/cambiar-contraseña", cambiarContraseña);
+router.delete("/:id", eliminarUsuario);
 
 export default router;
