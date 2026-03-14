@@ -63,7 +63,7 @@ export const iniciarPartida = async (juegoId, creadorId) => {
     return session;
 };
 
-// ─── ACTIVATE SESSION ─────────────────────────────────────────────────────────
+// ─── START SESSION ────────────────────────────────────────────────────────────
 
 export const startSession = async (sessionId) => {
     const session = await Session.findById(sessionId);
