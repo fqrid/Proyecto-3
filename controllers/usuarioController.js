@@ -1,15 +1,26 @@
 import Usuario from "../models/Usuario.js";
+import Rol from "../models/Rol.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+// Registrar usuario
 export const registrar = async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
+
     const existente = await Usuario.findOne({ email });
-    if (existente) return res.status(400).json({ message: "Email ya registrado" });
+    if (existente) {
+      return res.status(400).json({ message: "Email ya registrado" });
+    }
 
     const hashed = password ? await bcrypt.hash(password, 10) : undefined;
-    const usuario = new Usuario({ nombre, email, password: hashed });
+
+    const usuario = new Usuario({
+      nombre,
+      email,
+      password: hashed,
+    });
+
     await usuario.save();
 
     res.status(201).json({ message: "Usuario creado" });
@@ -18,28 +29,162 @@ export const registrar = async (req, res) => {
   }
 };
 
+// Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const usuario = await Usuario.findOne({ email });
-    if (!usuario) return res.status(400).json({ message: "Credenciales inválidas" });
+    if (!usuario) {
+      return res.status(400).json({ message: "Credenciales inválidas" });
+    }
 
     const match = password && (await bcrypt.compare(password, usuario.password));
-    if (!match) return res.status(400).json({ message: "Credenciales inválidas" });
+    if (!match) {
+      return res.status(400).json({ message: "Credenciales inválidas" });
+    }
 
-    const token = jwt.sign({ id: usuario._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(
+      { id: usuario._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
     res.json({ token });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// Perfil
 export const perfil = async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.userId).select("-password");
-    if (!usuario) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!usuario) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
     res.json(usuario);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtener todos los usuarios
+export const obtenerUsuarios = async (req, res) => {
+  try {
+    const usuarios = await Usuario.find().populate("rolId", "nombre");
+    res.json(usuarios);
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
+  }
+};
+
+// Obtener usuario por ID
+export const obtenerUsuarioPorId = async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id).populate("rolId", "nombre");
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: "Usuario no encontrado" });
+    }
+
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
+  }
+};
+
+// Crear usuario
+export const crearUsuario = async (req, res) => {
+  const { nombre, email, contraseña, rolId } = req.body;
+
+  try {
+    if (!nombre || !email || !contraseña || !rolId) {
+      return res.status(400).json({ mensaje: "Todos los campos son requeridos" });
+    }
+
+    const usuarioExistente = await Usuario.findOne({ email });
+    if (usuarioExistente) {
+      return res.status(400).json({ mensaje: "El email ya está registrado" });
+    }
+
+    const rol = await Rol.findById(rolId);
+    if (!rol) {
+      return res.status(404).json({ mensaje: "El rol no existe" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const contraseñaEncriptada = await bcrypt.hash(contraseña, salt);
+
+    const nuevoUsuario = new Usuario({
+      nombre,
+      email,
+      contraseña: contraseñaEncriptada,
+      rolId,
+    });
+
+    const usuarioGuardado = await nuevoUsuario.save();
+    const usuarioPopulado = await usuarioGuardado.populate("rolId", "nombre");
+
+    res.status(201).json(usuarioPopulado);
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
+  }
+};
+
+// Actualizar usuario
+export const actualizarUsuario = async (req, res) => {
+  try {
+    const { nombre, email, rolId } = req.body;
+
+    if (email) {
+      const usuarioExistente = await Usuario.findOne({
+        email,
+        _id: { $ne: req.params.id },
+      });
+
+      if (usuarioExistente) {
+        return res.status(400).json({ mensaje: "El email ya está registrado" });
+      }
+    }
+
+    if (rolId) {
+      const rol = await Rol.findById(rolId);
+      if (!rol) {
+        return res.status(404).json({ mensaje: "El rol no existe" });
+      }
+    }
+
+    const datosActualizar = { nombre, email, rolId };
+
+    const usuarioActualizado = await Usuario.findByIdAndUpdate(
+      req.params.id,
+      datosActualizar,
+      { new: true, runValidators: true }
+    ).populate("rolId", "nombre");
+
+    if (!usuarioActualizado) {
+      return res.status(404).json({ mensaje: "Usuario no encontrado" });
+    }
+
+    res.json(usuarioActualizado);
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
+  }
+};
+
+// Eliminar usuario
+export const eliminarUsuario = async (req, res) => {
+  try {
+    const usuario = await Usuario.findByIdAndDelete(req.params.id);
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: "Usuario no encontrado" });
+    }
+
+    res.json({ mensaje: "Usuario eliminado correctamente" });
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
   }
 };
