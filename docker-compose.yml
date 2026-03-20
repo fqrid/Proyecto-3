@@ -1,6 +1,6 @@
 services:
   backend:
-    build: .
+    build: ./backend
     container_name: robinhoot-backend
     ports:
       - "5000:5000"
