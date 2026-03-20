@@ -14,8 +14,8 @@ export const initSocket = (io) => {
             try {
                 const { session, participant } = await sessionService.joinSession(
                     pin,
-                    usuarioId,
-                    nombre
+                    nombre,     // nickname es el 2do parámetro del servicio
+                    usuarioId   // usuarioId es el 3er parámetro del servicio
                 );
 
                 const room = `session_${session._id}`;
