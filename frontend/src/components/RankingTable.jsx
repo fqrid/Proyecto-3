@@ -1,43 +1,84 @@
+import { BarChart2 } from "lucide-react";
+
 /**
- * PERSONA 2: Componente para mostrar ranking
- * Props: ranking (array de objetos con datos del ranking)
- * TODO: Mejorar estilos y agregar loading states
+ * RankingTable - Tabla de posiciones con estilo UP
  */
 export default function RankingTable({ ranking = [] }) {
   if (!ranking || ranking.length === 0) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "#aaa" }}>
-        <p>📊 Aún no hay datos...</p>
+      <div style={{ padding: "40px", textAlign: "center", color: "var(--color-text-muted)" }}>
+        <p style={{ fontSize: "1.2rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+          <BarChart2 size={24} /> Aún no hay desafíos completados...
+        </p>
       </div>
     );
   }
 
-  const th = { padding: "10px", textAlign: "left", color: "#eee", background: "#333" };
-  const td = { padding: "10px", color: "#ddd", borderBottom: "1px solid #444" };
+
+  const th = { 
+    padding: "16px", 
+    textAlign: "left", 
+    color: "var(--color-primary)", 
+    backgroundColor: "#f5f5f5",
+    borderBottom: "2px solid #eee",
+    fontWeight: "900",
+    textTransform: "uppercase",
+    fontSize: "0.85rem",
+    letterSpacing: "1px"
+  };
+  
+  const td = { 
+    padding: "16px", 
+    color: "var(--color-text)", 
+    borderBottom: "1px solid #eee",
+    fontSize: "1rem"
+  };
 
   return (
-    <div style={{ width: "100%", marginTop: "20px" }}>
-      <h2 style={{ color: "#f5c518" }}>🏆 Ranking</h2>
+    <div style={{ width: "100%", overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th style={th}>#</th>
-            <th style={th}>Nombre</th>
-            <th style={th}>Puntaje</th>
+            <th style={{ ...th, width: "60px", textAlign: "center" }}>POS</th>
+            <th style={th}>JUGADOR</th>
+            <th style={{ ...th, textAlign: "right" }}>PUNTAJE</th>
           </tr>
         </thead>
         <tbody>
-          {ranking.map((p, idx) => (
-            <tr key={p.usuarioId || idx}>
-              <td style={td}>{idx + 1}</td>
-              <td style={td}>{p.nombre || "Anónimo"}</td>
-              <td style={{ ...td, fontWeight: "bold", color: "#f5c518" }}>
-                {p.puntaje || 0}
-              </td>
-            </tr>
-          ))}
+          {ranking.map((p, idx) => {
+            const isTop3 = idx < 3;
+            const colors = ["#ffd700", "#c0c0c0", "#cd7f32"];
+            return (
+              <tr key={p.usuarioId || idx} style={{ backgroundColor: isTop3 ? "rgba(27, 94, 32, 0.03)" : "transparent" }}>
+                <td style={{ ...td, textAlign: "center", fontWeight: "900" }}>
+                  {isTop3 ? (
+                    <span style={{ 
+                      backgroundColor: colors[idx], 
+                      color: "#fff", 
+                      padding: "4px 10px", 
+                      borderRadius: "50%",
+                      fontSize: "0.8rem",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                    }}>
+                      {idx + 1}
+                    </span>
+                  ) : idx + 1}
+                </td>
+                <td style={{ ...td, fontWeight: "600" }}>{p.nombre || "Estudiante UP"}</td>
+                <td style={{ 
+                  ...td, 
+                  textAlign: "right", 
+                  fontWeight: "900", 
+                  color: isTop3 ? "var(--color-primary)" : "var(--color-text)" 
+                }}>
+                  {p.puntaje || 0}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
+
