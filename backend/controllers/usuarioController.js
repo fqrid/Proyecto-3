@@ -8,22 +8,39 @@ export const registrar = async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
 
+    // Validaciones básicas
+    if (!nombre || !email || !password) {
+      return res.status(400).json({ message: "Faltan campos requeridos" });
+    }
+
     const existente = await Usuario.findOne({ email });
     if (existente) {
       return res.status(400).json({ message: "Email ya registrado" });
     }
 
-    const hashed = password ? await bcrypt.hash(password, 10) : undefined;
+    // Hash de contraseña
+    const hashed = await bcrypt.hash(password, 10);
+
+    // Obtener rol por defecto (ESTUDIANTE)
+    let rolPorDefecto = await Rol.findOne({ nombre: "ESTUDIANTE" });
+    if (!rolPorDefecto) {
+      // Si no existe, crear el rol por defecto
+      rolPorDefecto = await Rol.create({ nombre: "ESTUDIANTE" });
+    }
 
     const usuario = new Usuario({
       nombre,
       email,
-      password: hashed,
+      contraseña: hashed,
+      rolId: rolPorDefecto._id,
     });
 
     await usuario.save();
 
-    res.status(201).json({ message: "Usuario creado" });
+    res.status(201).json({ 
+      message: "Usuario registrado exitosamente",
+      usuario: { id: usuario._id, nombre: usuario.nombre, email: usuario.email }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -34,12 +51,16 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email y contraseña requeridos" });
+    }
+
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
       return res.status(400).json({ message: "Credenciales inválidas" });
     }
 
-    const match = password && (await bcrypt.compare(password, usuario.password));
+    const match = await bcrypt.compare(password, usuario.contraseña);
     if (!match) {
       return res.status(400).json({ message: "Credenciales inválidas" });
     }
@@ -50,7 +71,11 @@ export const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({ token });
+    res.json({ 
+      message: "Login exitoso",
+      token,
+      usuario: { id: usuario._id, nombre: usuario.nombre, email: usuario.email }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -219,96 +244,6 @@ export const eliminarUsuario = async (req, res) => {
     if (!usuario) {
       return res.status(404).json({ mensaje: "Usuario no encontrado" });
     }
-    res.json({ mensaje: "Usuario eliminado correctamente" });
-  } catch (error) {
-    res.status(500).json({ mensaje: error.message });
-  }
-};
-
-  try {
-    if (!nombre || !email || !contraseña || !rolId) {
-      return res.status(400).json({ mensaje: "Todos los campos son requeridos" });
-    }
-
-    const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) {
-      return res.status(400).json({ mensaje: "El email ya está registrado" });
-    }
-
-    const rol = await Rol.findById(rolId);
-    if (!rol) {
-      return res.status(404).json({ mensaje: "El rol no existe" });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const contraseñaEncriptada = await bcrypt.hash(contraseña, salt);
-
-    const nuevoUsuario = new Usuario({
-      nombre,
-      email,
-      contraseña: contraseñaEncriptada,
-      rolId,
-    });
-
-    const usuarioGuardado = await nuevoUsuario.save();
-    const usuarioPopulado = await usuarioGuardado.populate("rolId", "nombre");
-
-    res.status(201).json(usuarioPopulado);
-  } catch (error) {
-    res.status(500).json({ mensaje: error.message });
-  }
-};
-
-// Actualizar usuario
-export const actualizarUsuario = async (req, res) => {
-  try {
-    const { nombre, email, rolId } = req.body;
-
-    if (email) {
-      const usuarioExistente = await Usuario.findOne({
-        email,
-        _id: { $ne: req.params.id },
-      });
-
-      if (usuarioExistente) {
-        return res.status(400).json({ mensaje: "El email ya está registrado" });
-      }
-    }
-
-    if (rolId) {
-      const rol = await Rol.findById(rolId);
-      if (!rol) {
-        return res.status(404).json({ mensaje: "El rol no existe" });
-      }
-    }
-
-    const datosActualizar = { nombre, email, rolId };
-
-    const usuarioActualizado = await Usuario.findByIdAndUpdate(
-      req.params.id,
-      datosActualizar,
-      { new: true, runValidators: true }
-    ).populate("rolId", "nombre");
-
-    if (!usuarioActualizado) {
-      return res.status(404).json({ mensaje: "Usuario no encontrado" });
-    }
-
-    res.json(usuarioActualizado);
-  } catch (error) {
-    res.status(500).json({ mensaje: error.message });
-  }
-};
-
-// Eliminar usuario
-export const eliminarUsuario = async (req, res) => {
-  try {
-    const usuario = await Usuario.findByIdAndDelete(req.params.id);
-
-    if (!usuario) {
-      return res.status(404).json({ mensaje: "Usuario no encontrado" });
-    }
-
     res.json({ mensaje: "Usuario eliminado correctamente" });
   } catch (error) {
     res.status(500).json({ mensaje: error.message });
