@@ -7,13 +7,14 @@ import {
   eliminarJuego,
 } from "../controllers/juegoController.js";
 import { verificarToken } from "../middleware/auth.js";
+import { esDocenteOAdmin } from "../middleware/roles.js";
 
 const router = express.Router();
 
 router.get("/", obtenerJuegos);
 router.get("/:id", obtenerJuego);
-router.post("/", verificarToken, crearJuego);
-router.put("/:id", verificarToken, actualizarJuego);
-router.delete("/:id", verificarToken, eliminarJuego);
+router.post("/", verificarToken, esDocenteOAdmin, crearJuego);
+router.put("/:id", verificarToken, esDocenteOAdmin, actualizarJuego);
+router.delete("/:id", verificarToken, esDocenteOAdmin, eliminarJuego);
 
 export default router;
